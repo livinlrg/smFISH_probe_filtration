@@ -47,11 +47,12 @@ def process_fasta_with_utrs(input_file_path, output_file_path, utr_boolean):
         output_file.writelines(processed_lines)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print("Usage: python script_name.py <input_fasta_file> <output_fasta_file> <retain UTRs True/False>")
         sys.exit(1)
-
+    print(sys.argv)
     input_file_path = sys.argv[1]
     output_file_path = sys.argv[2]
-
+    utr_boolean = sys.argv[3]
+	
     process_fasta_with_utrs(input_file_path, output_file_path, utr_boolean)
