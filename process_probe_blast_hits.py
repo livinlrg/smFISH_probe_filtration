@@ -7,12 +7,13 @@ def process_probe_blast_hits(input_file_path, output_file_path, gene_name):
 
     :param input_file_path: Path to the input FASTA file.
     :param output_file_path: Path to the output FASTA file.
-    """
-    with open(input_file_path, 'r') as input_file:
-        lines = input_file.readlines()
+    :param gene_name
     
-    out_line = ''
-    # possible_sections 
+    Will separate the alignment file into a description section (gene hit stats) and a
+    probe_section (alignments), and build a dictionary to be able to interact with these
+    files.
+    
+    """
     '''
     RID: XA6CJ91K016	
 	Job Title:48 sequences (Probe_1)				
@@ -34,6 +35,10 @@ def process_probe_blast_hits(input_file_path, output_file_path, gene_name):
 	Description                                                       Name            Name            Taxid      Score  Score cover Value Ident  Len        Accession        
 	Caenorhabditis briggsae Protein CBR-CEP-1 (Cbr-cep-1), partial... Caenorhabdit... NA              6238       40.1   40.1  100%  1e-04 100.00 1977       XM_002639437.2     
     '''
+    with open(input_file_path, 'r') as input_file:
+        lines = input_file.readlines()
+    
+    out_line = ''
     
     desc_header = ["Description", "Name", "Name", "Taxid", "Score", "Score", "cover", "Value", "Ident", "Len", "Accession"]
     desc_line_space = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -48,7 +53,10 @@ def process_probe_blast_hits(input_file_path, output_file_path, gene_name):
     previous_query_over = True
     
     for line in lines:
+    	print(str(len(line)) + " " + line.strip())
     	if line.startswith('Query #'):
+    		# Determines the length and name of the probe
+    		# Should always be at the start of a probe section
     		i += 1
     		split_line = line.split(':')
     		#print(line)
@@ -57,7 +65,8 @@ def process_probe_blast_hits(input_file_path, output_file_path, gene_name):
     		#print(probe_number[i] + ' ' + str(probe_length[i]))
     		probe_hits_line.append([])
     		hit_dict_list[probe_number[i]] = []
-    	elif line.startswith('Description'): # Calculate line spacing
+    	elif line.startswith('Description'):
+    		# Calculate line spacing
     		probe_section = True
     		
     		for j in range(1, len(desc_header)):
@@ -65,17 +74,22 @@ def process_probe_blast_hits(input_file_path, output_file_path, gene_name):
     			
     		continue
     	elif line.startswith('Alignments'):
+    		# denote the start of the alignment section
     		probe_section = False
     		hit_dict = {}
     		hit_number = -1
-    	    		
+    	    
     	if probe_section and len(line) > 1:
+    		# denotes the probe_section
+    		print(probe_section)
     		line_split = []
     		for j in range(10):
     			line_split.append(line[desc_line_space[j]:desc_line_space[j + 1]].strip())
-    		#print(line_split)
+    		print(line_split)
+    		print(i)
     		probe_hits_line[i].append(line_split)
     	if not probe_section and line.startswith('>') and previous_query_over:
+    		# process the full gene name of the alignment
     		previous_query_over = False
     		if ", partial mRNA" in line:
     			hit_name = line[24:line.index(', partial mRNA')]
@@ -85,9 +99,11 @@ def process_probe_blast_hits(input_file_path, output_file_path, gene_name):
     		
     		probe_hits_line[i][hit_number][0] = hit_name # update hit hit name to match
     		hit_dict_list[probe_number[i]].append(0)
-    	if not probe_section and line.startswith('>') and not previous_query_over: # Deal with multiple hits to paralogs
+    	if not probe_section and line.startswith('>') and not previous_query_over:
+    		# Deal with multiple hits to paralogs
     		continue
     	if not probe_section and line.startswith('Range'):
+    		# Extracts the length of the alignment
     		previous_query_over = True
     		hit_length = int(line[line.index(':'):].split('to')[1].strip()) - int(line[line.index(':') + 2:].split('to')[0].strip()) + 1
     		hit_dict_list[probe_number[i]][hit_number] = max(hit_dict_list[probe_number[i]][hit_number], hit_length)
